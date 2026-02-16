@@ -61,8 +61,8 @@ cp env.example .env
 ./deploy.sh
 
 # Option 2: Manual startup
-docker-compose up -d
-docker-compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
+docker compose up -d
+docker compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
 ```
 
 ### 3. Access the Application
@@ -143,17 +143,17 @@ Upload the generated ZIP file to ADTrapper for automatic analysis.
 
 ```bash
 # View status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f app
-docker-compose logs -f database
+docker compose logs -f app
+docker compose logs -f database
 
 # Restart services
-docker-compose restart
+docker compose restart
 
 # Stop services
-docker-compose down
+docker compose down
 
 # Fresh deployment (WARNING: deletes all data)
 ./deploy-fresh.sh
@@ -163,10 +163,10 @@ docker-compose down
 
 ```bash
 # Backup
-docker-compose exec database pg_dump -U postgres postgres > backup.sql
+docker compose exec database pg_dump -U postgres postgres > backup.sql
 
 # Restore
-docker-compose exec -T database psql -U postgres postgres < backup.sql
+docker compose exec -T database psql -U postgres postgres < backup.sql
 ```
 
 ## Configuration
@@ -186,7 +186,7 @@ See `env.example` for all available options:
 
 **Database tables not found (500 errors):**
 ```bash
-docker-compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
+docker compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
 ```
 
 **Port conflicts:**
@@ -197,8 +197,8 @@ lsof -i :54325
 
 **Application not responding:**
 ```bash
-docker-compose logs app
-docker-compose restart
+docker compose logs app
+docker compose restart
 ```
 
 ## Production Deployment
