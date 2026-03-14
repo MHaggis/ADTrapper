@@ -1121,6 +1121,27 @@ function Parse-ShareEvent {
     return $ParsedEvent
 }
 
+function get-localizedWellKnownGroupnames{
+    # Translates "Domain Admins" to e.g. german "Domänen-Admins" etc.
+    $objUser = New-Object System.Security.Principal.NTAccount($env:USERNAME) 
+    $strSID = $objUser.Translate([System.Security.Principal.SecurityIdentifier])
+    $domsid=$strSID.AccountDomainSid.Value
+    $result=@()
+    <#$PrivilegedGroups = "Domain Admins", "Enterprise Admins", "Schema Admins", "Administrators", "Backup Operators",
+     "Server Operators", "Account Operators", "Print Operators"
+    /#>
+    $result += ([Security.Principal.SecurityIdentifier]"$domsid-512").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"$domsid-519").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"$domsid-518").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"S-1-5-32-544").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"S-1-5-32-551").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"S-1-5-32-549").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"S-1-5-32-548").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    $result += ([Security.Principal.SecurityIdentifier]"S-1-5-32-550").Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
+    return $result
+
+}
+
 function Enrich-WithAD {
     param($Events)
     
@@ -1128,13 +1149,16 @@ function Enrich-WithAD {
         Write-Warning "Active Directory module not available. Skipping AD enrichment."
         return $Events
     }
-    
+    #fill $PrivilegedGroups with localized Values
+    $PrivilegedGroups = get-localizedWellKnownGroupnames
+    # localized anonymous Logon in german e.g. "ANONYMOUS-ANMELDUNG"
+    $anon= ([Security.Principal.SecurityIdentifier]'S-1-5-7').Translate([System.Security.Principal.NTAccount]).Value.Split('\')[1]
     Write-Host "Enriching with Active Directory data..."
     
     $UserCache = @{}
     
     foreach ($Event in $Events) {
-        if ($Event.userName -and $Event.userName -ne "ANONYMOUS LOGON" -and $Event.userName -notmatch '\$$') {
+        if ($Event.userName -and $Event.userName -ne "$anon" -and $Event.userName -notmatch '\$$') {
             $UserKey = "$($Event.domainName)\$($Event.userName)"
             
             if (-not $UserCache.ContainsKey($UserKey)) {
@@ -1142,7 +1166,7 @@ function Enrich-WithAD {
                     $ADUser = Get-ADUser -Identity $Event.userName -Properties Department, Title, LastLogonDate, PasswordLastSet, Enabled, LockedOut, MemberOf, Description, SamAccountName, UserPrincipalName, whenCreated, PasswordNeverExpires, CannotChangePassword, AccountExpirationDate, LastBadPasswordAttempt, BadPwdCount -ErrorAction SilentlyContinue
 
                     if ($ADUser) {
-                        $PrivilegedGroups = @("Domain Admins", "Enterprise Admins", "Schema Admins", "Administrators", "Backup Operators", "Server Operators", "Account Operators", "Print Operators")
+                        #$PrivilegedGroups = @("Domain Admins", "Enterprise Admins", "Schema Admins", "Administrators", "Backup Operators", "Server Operators", "Account Operators", "Print Operators")
                         $UserGroups = $ADUser.MemberOf | ForEach-Object { (Get-ADGroup $_ -ErrorAction SilentlyContinue).Name } | Where-Object { $_ }
                         $IsPrivileged = ($UserGroups | Where-Object { $PrivilegedGroups -contains $_ }) -ne $null
 
