@@ -26,19 +26,19 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo "🗑️  Removing existing containers and volumes..."
-docker-compose down -v  # -v removes volumes too
+docker compose down -v  # -v removes volumes too
 
 echo "🏗️  Building fresh containers..."
-docker-compose build --no-cache
+docker compose build --no-cache
 
 echo "▶️  Starting fresh containers..."
-docker-compose up -d
+docker compose up -d
 
 echo "⏳ Waiting for services..."
 sleep 15
 
 echo "📊 Initializing database schema..."
-docker-compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
+docker compose exec -T database psql -U postgres < supabase/migrations/0001_simple_setup.sql
 
 echo "🏥 Health check..."
 if curl -s http://localhost:3000/api/sessions > /dev/null; then
@@ -48,5 +48,5 @@ if curl -s http://localhost:3000/api/sessions > /dev/null; then
     echo "📊 Fresh database - no existing data"
 else
     echo "❌ Health check failed"
-    docker-compose logs app
+    docker compose logs app
 fi
